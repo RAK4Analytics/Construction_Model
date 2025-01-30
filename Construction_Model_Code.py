@@ -8,6 +8,13 @@ from fpdf import FPDF
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+
+# Streamlit GUI Setup
+st.set_page_config(page_title="Construction Cost Estimator", page_icon="🏗️", layout="centered")
 
 # --------------------------- Load Existing Model & Data ---------------------------
 
@@ -22,6 +29,8 @@ df_all = pd.concat(df.values(), ignore_index=True)
 # Compute Additional Features
 df_all["Cost per Square Meter"] = df_all["Total Cost (USD)"] / df_all["Quantity"]
 df_all["Labor-to-Material Ratio"] = df_all["Total Cost (USD)"] / df_all["Unit Price (USD)"]
+df_all["Cost per Floor"] = df_all["Total Cost (USD)"] / df_all["Quantity"]
+df_all["Inflation Adjustment"] = df_all["Total Cost (USD)"] * 1.05  # Assuming 5% yearly inflation
 
 # Aggregate data by project and cost category
 df_pivot = df_all.pivot_table(
@@ -54,15 +63,59 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# Model Training
-model = RandomForestRegressor(n_estimators=100, random_state=42)
-model.fit(X_train_scaled, y_train)
+# --------------------------- Defining best Model to use ---------------------------
+# --------------------------- Defining Best Model to Use ---------------------------
 
-# Save Model & Scaler
-model_path = os.path.join(output_dir, "construction_cost_model.pkl")
+# Define Multiple Models
+models = {
+    "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
+    "XGBoost": XGBRegressor(n_estimators=100, random_state=42),
+    "Linear Regression": LinearRegression(),
+    "Neural Network (MLP)": MLPRegressor(hidden_layer_sizes=(64, 64), max_iter=500, random_state=42)
+}
+
+# Store Performance Metrics
+mae_scores, rmse_scores, r2_scores = {}, {}, {}
+
+# Train & Evaluate Each Model
+for model_name, model in models.items():
+    model.fit(X_train_scaled, y_train)
+    y_pred = model.predict(X_test_scaled)
+
+    mae_scores[model_name] = mean_absolute_error(y_test, y_pred)
+    rmse_scores[model_name] = np.sqrt(mean_squared_error(y_test, y_pred))
+    r2_scores[model_name] = model.score(X_test_scaled, y_test)
+
+# Select Best Model Based on RMSE
+best_model_name = min(rmse_scores, key=rmse_scores.get)
+best_model = models[best_model_name]
+
+# Save Best Model & Scaler
+model_path = os.path.join(output_dir, "best_construction_cost_model.pkl")
 scaler_path = os.path.join(output_dir, "scaler.pkl")
-joblib.dump(model, model_path)
+joblib.dump(best_model, model_path)
 joblib.dump(scaler, scaler_path)
+
+# --------------------------- Model Performance UI Section ---------------------------
+
+with st.expander("📊 Model Comparison Results (Click to Expand/Collapse)"):
+    st.write("### 📊 Model Comparison Results")
+
+    # Convert model performance metrics to a DataFrame
+    model_results_df = pd.DataFrame({
+        "Model": list(mae_scores.keys()),
+        "MAE": [f"{mae_scores[m]:,.3f}" for m in mae_scores.keys()],
+        "RMSE": [f"{rmse_scores[m]:,.3f}" for m in mae_scores.keys()],
+        "R² Score": [f"{r2_scores[m]:.4f}" for m in mae_scores.keys()]
+    })
+
+    # Display table
+    st.table(model_results_df)
+
+    # **Show the selected best model**
+    st.success(f"✅ **The best model selected: {best_model_name}**")
+
+
 
 # --------------------------- Streamlit GUI for Cost Estimation ---------------------------
 
@@ -71,7 +124,7 @@ model = joblib.load(model_path)
 scaler = joblib.load(scaler_path)
 
 # Streamlit GUI Setup
-st.set_page_config(page_title="Construction Cost Estimator", page_icon="🏗️", layout="centered")
+#st.set_page_config(page_title="Construction Cost Estimator", page_icon="🏗️", layout="centered")
 
 st.title("🏗️ Construction Cost Estimator")
 st.write("### Enter project details below to estimate the total construction cost.")
