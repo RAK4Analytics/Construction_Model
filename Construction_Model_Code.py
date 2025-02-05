@@ -12,9 +12,13 @@ from xgboost import XGBRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.svm import SVR  # ADDED Support Vector Regressor (SVR)
 
 # Streamlit GUI Setup
 st.set_page_config(page_title="Construction Cost Estimator", page_icon="🏗️", layout="centered")
+
+# Display Logo in Top Left Corner
+st.image("https://i.postimg.cc/fLcqQZ2q/RAK-4-DIGITAL-SCREEN-GREY-BACKG.png", width=150)
 
 # --------------------------- Load Existing Model & Data ---------------------------
 
@@ -63,7 +67,6 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# --------------------------- Defining best Model to use ---------------------------
 # --------------------------- Defining Best Model to Use ---------------------------
 
 # Define Multiple Models
@@ -71,7 +74,8 @@ models = {
     "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
     "XGBoost": XGBRegressor(n_estimators=100, random_state=42),
     "Linear Regression": LinearRegression(),
-    "Neural Network (MLP)": MLPRegressor(hidden_layer_sizes=(64, 64), max_iter=500, random_state=42)
+    "Neural Network (MLP)": MLPRegressor(hidden_layer_sizes=(64, 64), max_iter=500, random_state=42),
+    "Support Vector Regressor (SVR)": SVR(kernel="rbf")
 }
 
 # Store Performance Metrics
@@ -131,7 +135,37 @@ st.write("### Enter project details below to estimate the total construction cos
 
 # User Input Fields
 project_type = st.selectbox("🏗️ Select Project Type", ["Residential", "Industrial", "Commercial", "Infrastructure", "Education", "Healthcare"])
-location_factor = st.slider("📍 Location-Based Cost Factor (1.0 = Base Cost)", 0.5, 2.0, 1.0)
+regional_cost_index = {
+    "Dubai": 1.30,
+    "Abu Dhabi": 1.25,
+    "Riyadh": 1.20,
+    "Jeddah": 1.15,
+    "Doha": 1.22,
+    "Kuwait City": 1.18,
+    "Cairo": 0.85,
+    "Istanbul": 0.90,
+    "London": 1.50,
+    "New York": 1.70
+}
+
+# **Initialize session state for the cost factor if not already set**
+if "location_factor" not in st.session_state:
+    st.session_state["location_factor"] = 1.0  # Default value
+
+# **Location Selection**
+selected_region = st.selectbox("🌍 Select Project Location", list(regional_cost_index.keys()))
+
+# **Auto-Adjust Cost Factor Based on Selection**
+if st.session_state["location_factor"] != regional_cost_index[selected_region]:  
+    st.session_state["location_factor"] = regional_cost_index[selected_region]  # Set new value
+
+# **Fine-Tune Cost Factor Slider (Pre-Filled with Selected Region's Value)**
+location_factor = st.slider(
+    "📍 Fine-Tune Cost Factor/Pirce Index (Manual Adjustment)", 
+    min_value=0.5, 
+    max_value=2.0, 
+    value=st.session_state["location_factor"]
+)
 material_quality = st.selectbox("🛠️ Material Quality", ["Standard", "Premium", "Luxury"])
 project_size = st.number_input("📏 Enter Project Size (sqm)", min_value=10, max_value=100000, value=1000)
 num_floors = st.number_input("🏢 Enter Number of Floors", min_value=1, max_value=100, value=5)
@@ -139,7 +173,8 @@ timeline = st.number_input("⏳ Enter Project Timeline (months)", min_value=1, m
 
 # Estimate Button
 if st.button("🔍 Estimate Cost"):
-    estimated_cost_factor = (project_size * 200 * location_factor) + (num_floors * 5000) + (timeline * 3000)
+    adjusted_location_factor = regional_cost_index[selected_region] * location_factor
+    estimated_cost_factor = (project_size * 200 * adjusted_location_factor) + (num_floors * 5000) + (timeline * 3000)
 
     # Ensure correct shape for model prediction
     input_data = np.array([[estimated_cost_factor] * scaler.n_features_in_])
