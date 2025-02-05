@@ -13,6 +13,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.svm import SVR  # ADDED Support Vector Regressor (SVR)
+import requests
+from io import BytesIO
 
 # Streamlit GUI Setup
 st.set_page_config(page_title="Construction Cost Estimator", page_icon="🏗️", layout="centered")
@@ -22,13 +24,25 @@ st.image("https://i.postimg.cc/fLcqQZ2q/RAK-4-DIGITAL-SCREEN-GREY-BACKG.png", wi
 
 # --------------------------- Load Existing Model & Data ---------------------------
 
-# Define output directory
-output_dir = "C:/Users/Serge/Desktop/Construction Model Data/Code Output"
-file_path = os.path.join(output_dir, "Structured_Master_Construction_Costs.xlsx")
+## # Define output directory
+## output_dir = "C:/Users/Serge/Desktop/Construction Model Data/Code Output"
+## file_path = os.path.join(output_dir, "Structured_Master_Construction_Costs.xlsx")
+## 
+## # Load structured dataset
+## df = pd.read_excel(file_path, sheet_name=None)
+## df_all = pd.concat(df.values(), ignore_index=True)
 
-# Load structured dataset
-df = pd.read_excel(file_path, sheet_name=None)
-df_all = pd.concat(df.values(), ignore_index=True)
+# ✅ GitHub Raw URL for the Excel file
+github_excel_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/Structured_Master_Construction_Costs.xlsx"
+
+# ✅ Read the Excel file from GitHub
+response = requests.get(github_excel_url)
+if response.status_code == 200:
+    df = pd.read_excel(BytesIO(response.content), sheet_name=None, engine="openpyxl")
+    df_all = pd.concat(df.values(), ignore_index=True)
+    st.success("✅ Successfully loaded the dataset from GitHub!")
+else:
+    st.error(f"⚠️ Error: Could not load the Excel file. HTTP Status Code: {response.status_code}")
 
 # Compute Additional Features
 df_all["Cost per Square Meter"] = df_all["Total Cost (USD)"] / df_all["Quantity"]
