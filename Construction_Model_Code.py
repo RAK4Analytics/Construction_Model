@@ -158,9 +158,9 @@ with st.expander("📊 Model Comparison Results (Click to Expand/Collapse)"):
 
 # --------------------------- Streamlit GUI for Cost Estimation ---------------------------
 
-# Load trained model and scaler
-model = joblib.load(model_path)
-scaler = joblib.load(scaler_path)
+## # Load trained model and scaler
+## model = joblib.load(model_path)
+## scaler = joblib.load(scaler_path)
 
 # Streamlit GUI Setup
 #st.set_page_config(page_title="Construction Cost Estimator", page_icon="🏗️", layout="centered")
