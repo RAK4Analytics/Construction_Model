@@ -189,7 +189,7 @@ st.write("### Enter project details below to estimate the total construction cos
 # User Input Fields
 # ✅ Move inputs to the sidebar
 with st.sidebar:
-    st.header("📊 Project Settings")
+    st.header("📊 Project Parameters")
 
     project_type = st.selectbox("🏗️ Select Project Type", 
                                 ["Residential", "Industrial", "Commercial", "Infrastructure", "Education", "Healthcare"])
@@ -250,12 +250,12 @@ if st.button("🔍 Estimate Cost"):
     col1, col2 = st.columns([1, 1])  
 
     with col1:
-        st.write("📊 **Summary Cost Estimate**")
-        summary_data = pd.DataFrame({
-            "Category": ["Total Estimated Cost", "Material Cost", "Labor Cost", "Equipment Cost", "Additional Costs"],
-            "Amount (USD)": [predicted_total_cost, material_cost, labor_cost, equipment_cost, additional_costs]
-        })
-        st.dataframe(summary_data)
+        with st.expander("📊 **Summary Cost Estimate**", expanded=True):
+            summary_data = pd.DataFrame({
+                "Category": ["Total Estimated Cost", "Material Cost", "Labor Cost", "Equipment Cost", "Additional Costs"],
+                "Amount (USD)": [predicted_total_cost, material_cost, labor_cost, equipment_cost, additional_costs]
+                })
+            st.dataframe(summary_data)
 
         # Download Summary Table
         summary_excel = summary_data.to_csv(index=False).encode('utf-8')
