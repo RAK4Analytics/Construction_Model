@@ -44,6 +44,11 @@ def load_data():
     if response.status_code == 200:
         df = pd.read_excel(BytesIO(response.content), sheet_name=None, engine="openpyxl")
         df_all = pd.concat(df.values(), ignore_index=True)
+        # Compute Additional Features
+        df_all["Cost per Square Meter"] = df_all["Total Cost (USD)"] / df_all["Quantity"]
+        df_all["Labor-to-Material Ratio"] = df_all["Total Cost (USD)"] / df_all["Unit Price (USD)"]
+        df_all["Cost per Floor"] = df_all["Total Cost (USD)"] / df_all["Quantity"]
+        df_all["Inflation Adjustment"] = df_all["Total Cost (USD)"] * 1.05  # Assuming 5% yearly inflation
         return df_all
     else:
         st.error(f"⚠️ Error: Could not load the Excel file. HTTP Status Code: {response.status_code}")
@@ -52,11 +57,6 @@ def load_data():
 # ✅ Load Cached Data
 df_all = load_data()
 
-# Compute Additional Features
-df_all["Cost per Square Meter"] = df_all["Total Cost (USD)"] / df_all["Quantity"]
-df_all["Labor-to-Material Ratio"] = df_all["Total Cost (USD)"] / df_all["Unit Price (USD)"]
-df_all["Cost per Floor"] = df_all["Total Cost (USD)"] / df_all["Quantity"]
-df_all["Inflation Adjustment"] = df_all["Total Cost (USD)"] * 1.05  # Assuming 5% yearly inflation
 
 # Aggregate data by project and cost category
 df_pivot = df_all.pivot_table(
@@ -187,42 +187,49 @@ st.title("🏗️ Construction Cost Estimator")
 st.write("### Enter project details below to estimate the total construction cost.")
 
 # User Input Fields
-project_type = st.selectbox("🏗️ Select Project Type", ["Residential", "Industrial", "Commercial", "Infrastructure", "Education", "Healthcare"])
-regional_cost_index = {
-    "Dubai": 1.30,
-    "Abu Dhabi": 1.25,
-    "Riyadh": 1.20,
-    "Jeddah": 1.15,
-    "Doha": 1.22,
-    "Kuwait City": 1.18,
-    "Cairo": 0.85,
-    "Istanbul": 0.90,
-    "London": 1.50,
-    "New York": 1.70
-}
+# ✅ Move inputs to the sidebar
+with st.sidebar:
+    st.header("📊 Project Settings")
 
-# **Initialize session state for the cost factor if not already set**
-if "location_factor" not in st.session_state:
-    st.session_state["location_factor"] = 1.0  # Default value
+    project_type = st.selectbox("🏗️ Select Project Type", 
+                                ["Residential", "Industrial", "Commercial", "Infrastructure", "Education", "Healthcare"])
 
-# **Location Selection**
-selected_region = st.selectbox("🌍 Select Project Location", list(regional_cost_index.keys()))
+    regional_cost_index = {
+        "Dubai": 1.30,
+        "Abu Dhabi": 1.25,
+        "Riyadh": 1.20,
+        "Jeddah": 1.15,
+        "Doha": 1.22,
+        "Kuwait City": 1.18,
+        "Cairo": 0.85,
+        "Istanbul": 0.90,
+        "London": 1.50,
+        "New York": 1.70
+    }
 
-# **Auto-Adjust Cost Factor Based on Selection**
-if st.session_state["location_factor"] != regional_cost_index[selected_region]:  
-    st.session_state["location_factor"] = regional_cost_index[selected_region]  # Set new value
+    # **Location Selection**
+    selected_region = st.selectbox("🌍 Select Project Location", list(regional_cost_index.keys()))
 
-# **Fine-Tune Cost Factor Slider (Pre-Filled with Selected Region's Value)**
-location_factor = st.slider(
-    "📍 Fine-Tune Cost Factor/Pirce Index (Manual Adjustment)", 
-    min_value=0.5, 
-    max_value=2.0, 
-    value=st.session_state["location_factor"]
-)
-material_quality = st.selectbox("🛠️ Material Quality", ["Standard", "Premium", "Luxury"])
-project_size = st.number_input("📏 Enter Project Size (sqm)", min_value=10, max_value=100000, value=1000)
-num_floors = st.number_input("🏢 Enter Number of Floors", min_value=1, max_value=100, value=5)
-timeline = st.number_input("⏳ Enter Project Timeline (months)", min_value=1, max_value=60, value=12)
+    # **Initialize session state for the cost factor if not already set**
+    if "location_factor" not in st.session_state:
+        st.session_state["location_factor"] = 1.0  # Default value
+
+    # **Auto-Adjust Cost Factor Based on Selection**
+    if st.session_state["location_factor"] != regional_cost_index[selected_region]:  
+        st.session_state["location_factor"] = regional_cost_index[selected_region]  # Set new value
+
+    # **Fine-Tune Cost Factor Slider (Pre-Filled with Selected Region's Value)**
+    location_factor = st.slider(
+        "📍 Fine-Tune Cost Factor/Price Index (Manual Adjustment)", 
+        min_value=0.5, 
+        max_value=2.0, 
+        value=st.session_state["location_factor"]
+    )
+
+    material_quality = st.selectbox("🛠️ Material Quality", ["Standard", "Premium", "Luxury"])
+    project_size = st.number_input("📏 Enter Project Size (sqm)", min_value=10, max_value=100000, value=1000)
+    num_floors = st.number_input("🏢 Enter Number of Floors", min_value=1, max_value=100, value=5)
+    timeline = st.number_input("⏳ Enter Project Timeline (months)", min_value=1, max_value=60, value=12)
 
 # Estimate Button
 if st.button("🔍 Estimate Cost"):
