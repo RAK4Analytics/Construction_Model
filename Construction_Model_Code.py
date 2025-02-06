@@ -40,7 +40,7 @@ response = requests.get(github_excel_url)
 if response.status_code == 200:
     df = pd.read_excel(BytesIO(response.content), sheet_name=None, engine="openpyxl")
     df_all = pd.concat(df.values(), ignore_index=True)
-    st.success("✅ Successfully loaded the dataset from GitHub!")
+    st.success("✅ Dataset loaded!")
 else:
     st.error(f"⚠️ Error: Could not load the Excel file. HTTP Status Code: {response.status_code}")
 
@@ -122,7 +122,7 @@ github_scaler_url = "https://raw.githubusercontent.com/RAK4Analytics/Constructio
 response_model = requests.get(github_model_url)
 if response_model.status_code == 200:
     model = joblib.load(BytesIO(response_model.content))
-    st.success("✅ Successfully loaded the trained model from GitHub!")
+    st.success("✅ Trained model loaded!")
 else:
     st.error(f"⚠️ Error: Could not load the model. HTTP Status Code: {response_model.status_code}")
 
@@ -130,7 +130,7 @@ else:
 response_scaler = requests.get(github_scaler_url)
 if response_scaler.status_code == 200:
     scaler = joblib.load(BytesIO(response_scaler.content))
-    st.success("✅ Successfully loaded the scaler from GitHub!")
+    st.success("✅ Scaler loaded!")
 else:
     st.error(f"⚠️ Error: Could not load the scaler. HTTP Status Code: {response_scaler.status_code}")
 
