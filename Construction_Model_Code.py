@@ -191,74 +191,60 @@ st.write("### Enter project details below to estimate the total construction cos
 with st.sidebar:
     st.header("📊 Project Parameters")
 
-    # **Project Type Selection**
-    project_type = st.selectbox(
-        "🏗️ Select Project Type", 
-        ["Residential", "Industrial", "Commercial", "Infrastructure", "Education", "Healthcare"]
-    )
+    project_type = st.selectbox("🏗️ Select Project Type", 
+                                ["Residential", "Industrial", "Commercial", "Infrastructure", "Education", "Healthcare"])
 
-    # **Regional Cost Index**
     regional_cost_index = {
-        "Dubai": 1.30, "Abu Dhabi": 1.25, "Riyadh": 1.20, "Jeddah": 1.15,
-        "Doha": 1.22, "Kuwait City": 1.18, "Cairo": 0.85, "Istanbul": 0.90,
-        "London": 1.50, "New York": 1.70
+        "Dubai": 1.30,
+        "Abu Dhabi": 1.25,
+        "Riyadh": 1.20,
+        "Jeddah": 1.15,
+        "Doha": 1.22,
+        "Kuwait City": 1.18,
+        "Cairo": 0.85,
+        "Istanbul": 0.90,
+        "London": 1.50,
+        "New York": 1.70
     }
 
-    # ✅ Ensure Selected Region is Stored in Session State
-    if "selected_region" not in st.session_state:
-        st.session_state["selected_region"] = "Dubai"
+    # **Location Selection**
+    selected_region = st.selectbox("🌍 Select Project Location", list(regional_cost_index.keys()))
 
-    # ✅ Store the selected region but do NOT apply cost factor change immediately
-    new_selected_region = st.selectbox(
-        "🌍 Select Project Location", 
-        list(regional_cost_index.keys()), 
-        index=list(regional_cost_index.keys()).index(st.session_state["selected_region"])
-    )
-
-    # **Ensure Location Factor is Stored in Session State**
+    # **Initialize session state for the cost factor if not already set**
     if "location_factor" not in st.session_state:
-        st.session_state["location_factor"] = regional_cost_index[st.session_state["selected_region"]]
+        st.session_state["location_factor"] = 1.0  # Default value
 
-    # ✅ If the user selects a new region, update the cost factor *but don’t apply it immediately*
-    if new_selected_region != st.session_state["selected_region"]:
-        st.session_state["selected_region"] = new_selected_region
-        st.session_state["pending_location_factor"] = regional_cost_index[new_selected_region]  # Temporary value
-        st.session_state["location_factor_changed"] = True  # Track change
+    # **Auto-Adjust Cost Factor Based on Selection**
+    if st.session_state["location_factor"] != regional_cost_index[selected_region]:  
+        st.session_state["location_factor"] = regional_cost_index[selected_region]  # Set new value
 
-    # ✅ Keep the slider dynamic, but don't immediately apply changes to `st.session_state["location_factor"]`
-    pending_factor = st.session_state.get("pending_location_factor", st.session_state["location_factor"])
-    new_location_factor = st.slider(
+    # **Fine-Tune Cost Factor Slider (Pre-Filled with Selected Region's Value)**
+    location_factor = st.slider(
         "📍 Fine-Tune Cost Factor/Price Index (Manual Adjustment)", 
         min_value=0.5, 
         max_value=2.0, 
-        value=pending_factor
+        value=st.session_state["location_factor"]
     )
 
-    # ✅ Store the new slider value temporarily (only applied when clicking "Estimate Cost")
-    st.session_state["pending_location_factor"] = new_location_factor
-
-    # **Material Quality Selection**
     material_quality = st.selectbox("🛠️ Material Quality", ["Standard", "Premium", "Luxury"])
-
-    # **Project Size Input**
     project_size = st.number_input("📏 Enter Project Size (sqm)", min_value=10, max_value=100000, value=1000)
-
-    # **Number of Floors Input**
     num_floors = st.number_input("🏢 Enter Number of Floors", min_value=1, max_value=100, value=5)
-
-    # **Project Timeline Input**
     timeline = st.number_input("⏳ Enter Project Timeline (months)", min_value=1, max_value=60, value=12)
 
-# Estimate Button
+# ✅ Estimate Button (Now Applies Pending Location Factor)
 if st.button("🔍 Estimate Cost"):
-    adjusted_location_factor = regional_cost_index[selected_region] * location_factor
+    # ✅ Apply the pending location factor when the button is clicked
+    st.session_state["location_factor"] = st.session_state["pending_location_factor"]
+
+    # ✅ Get final adjusted cost factor
+    adjusted_location_factor = regional_cost_index[st.session_state["selected_region"]] * st.session_state["location_factor"]
     estimated_cost_factor = (project_size * 200 * adjusted_location_factor) + (num_floors * 5000) + (timeline * 3000)
 
     # Ensure correct shape for model prediction
     input_data = np.array([[estimated_cost_factor] * scaler.n_features_in_])
     predicted_total_cost = model.predict(scaler.transform(input_data))[0]
 
-    # Cost Breakdown
+    # ✅ Cost Breakdown
     material_cost = predicted_total_cost * 0.5  
     labor_cost = predicted_total_cost * 0.3  
     equipment_cost = predicted_total_cost * 0.1  
@@ -272,7 +258,7 @@ if st.button("🔍 Estimate Cost"):
             summary_data = pd.DataFrame({
                 "Category": ["Total Estimated Cost", "Material Cost", "Labor Cost", "Equipment Cost", "Additional Costs"],
                 "Amount (USD)": [predicted_total_cost, material_cost, labor_cost, equipment_cost, additional_costs]
-                })
+            })
             st.dataframe(summary_data)
 
         # Download Summary Table
