@@ -108,11 +108,32 @@ for model_name, model in models.items():
 best_model_name = min(rmse_scores, key=rmse_scores.get)
 best_model = models[best_model_name]
 
-# Save Best Model & Scaler
-model_path = os.path.join(output_dir, "best_construction_cost_model.pkl")
-scaler_path = os.path.join(output_dir, "scaler.pkl")
-joblib.dump(best_model, model_path)
-joblib.dump(scaler, scaler_path)
+## # Save Best Model & Scaler
+## model_path = os.path.join(output_dir, "best_construction_cost_model.pkl")
+## scaler_path = os.path.join(output_dir, "scaler.pkl")
+## joblib.dump(best_model, model_path)
+## joblib.dump(scaler, scaler_path)
+
+# ✅ GitHub Raw URLs for `.pkl` files
+github_model_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/models/best_construction_cost_model.pkl"
+github_scaler_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/models/scaler.pkl"
+
+# ✅ Download & Load the Model
+response_model = requests.get(github_model_url)
+if response_model.status_code == 200:
+    model = joblib.load(BytesIO(response_model.content))
+    st.success("✅ Successfully loaded the trained model from GitHub!")
+else:
+    st.error(f"⚠️ Error: Could not load the model. HTTP Status Code: {response_model.status_code}")
+
+# ✅ Download & Load the Scaler
+response_scaler = requests.get(github_scaler_url)
+if response_scaler.status_code == 200:
+    scaler = joblib.load(BytesIO(response_scaler.content))
+    st.success("✅ Successfully loaded the scaler from GitHub!")
+else:
+    st.error(f"⚠️ Error: Could not load the scaler. HTTP Status Code: {response_scaler.status_code}")
+
 
 # --------------------------- Model Performance UI Section ---------------------------
 
