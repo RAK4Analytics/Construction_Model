@@ -115,8 +115,8 @@ best_model = models[best_model_name]
 ## joblib.dump(scaler, scaler_path)
 
 # ✅ GitHub Raw URLs for `.pkl` files
-github_model_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/models/best_construction_cost_model.pkl"
-github_scaler_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/models/scaler.pkl"
+github_model_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/best_construction_cost_model.pkl"
+github_scaler_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/scaler.pkl"
 
 # ✅ Download & Load the Model
 response_model = requests.get(github_model_url)
