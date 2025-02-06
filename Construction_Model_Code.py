@@ -36,13 +36,21 @@ st.image("https://i.postimg.cc/fLcqQZ2q/RAK-4-DIGITAL-SCREEN-GREY-BACKG.png", wi
 github_excel_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/Structured_Master_Construction_Costs.xlsx"
 
 # ✅ Read the Excel file from GitHub
-response = requests.get(github_excel_url)
-if response.status_code == 200:
-    df = pd.read_excel(BytesIO(response.content), sheet_name=None, engine="openpyxl")
-    df_all = pd.concat(df.values(), ignore_index=True)
-    st.success("✅ Dataset loaded!")
-else:
-    st.error(f"⚠️ Error: Could not load the Excel file. HTTP Status Code: {response.status_code}")
+@st.cache_data
+def load_data():
+    github_excel_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/Structured_Master_Construction_Costs.xlsx"
+    response = requests.get(github_excel_url)
+    
+    if response.status_code == 200:
+        df = pd.read_excel(BytesIO(response.content), sheet_name=None, engine="openpyxl")
+        df_all = pd.concat(df.values(), ignore_index=True)
+        return df_all
+    else:
+        st.error(f"⚠️ Error: Could not load the Excel file. HTTP Status Code: {response.status_code}")
+        return None
+
+# ✅ Load Cached Data
+df_all = load_data()
 
 # Compute Additional Features
 df_all["Cost per Square Meter"] = df_all["Total Cost (USD)"] / df_all["Quantity"]
@@ -119,21 +127,31 @@ github_model_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction
 github_scaler_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/scaler.pkl"
 
 # ✅ Download & Load the Model
-response_model = requests.get(github_model_url)
-if response_model.status_code == 200:
-    model = joblib.load(BytesIO(response_model.content))
-    st.success("✅ Trained model loaded!")
-else:
-    st.error(f"⚠️ Error: Could not load the model. HTTP Status Code: {response_model.status_code}")
+@st.cache_resource
+def load_model_and_scaler():
+    github_model_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/best_construction_cost_model.pkl"
+    github_scaler_url = "https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/scaler.pkl"
 
-# ✅ Download & Load the Scaler
-response_scaler = requests.get(github_scaler_url)
-if response_scaler.status_code == 200:
-    scaler = joblib.load(BytesIO(response_scaler.content))
-    st.success("✅ Scaler loaded!")
-else:
-    st.error(f"⚠️ Error: Could not load the scaler. HTTP Status Code: {response_scaler.status_code}")
+    # Load Model
+    response_model = requests.get(github_model_url)
+    if response_model.status_code == 200:
+        model = joblib.load(BytesIO(response_model.content))
+    else:
+        st.error(f"⚠️ Error: Could not load the model. HTTP Status Code: {response_model.status_code}")
+        return None, None
 
+    # Load Scaler
+    response_scaler = requests.get(github_scaler_url)
+    if response_scaler.status_code == 200:
+        scaler = joblib.load(BytesIO(response_scaler.content))
+    else:
+        st.error(f"⚠️ Error: Could not load the scaler. HTTP Status Code: {response_scaler.status_code}")
+        return None, None
+
+    return model, scaler
+
+# ✅ Call the Cached Function (This runs only once per session)
+model, scaler = load_model_and_scaler()
 
 # --------------------------- Model Performance UI Section ---------------------------
 
