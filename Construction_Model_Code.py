@@ -190,7 +190,7 @@ st.write("### Enter project details below to estimate the total construction cos
 # ✅ Move inputs to the sidebar
 with st.sidebar:
     # Add logo to the top left corner of the sidebar
-    st.image("https://i.postimg.cc/Y0VkBZJw/microchip-logo.png", width=100)
+    st.image("https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/microchip.png", width=100)
     st.header("📊 Project Parameters")
 
     project_type = st.selectbox("🏗️ Select Project Type", 
