@@ -189,7 +189,7 @@ st.write("### Enter project details below to estimate the total construction cos
 # User Input Fields
 # ✅ Move inputs to the sidebar
 with st.sidebar:
-    # Add logo to the top left corner of the sidebar
+    # ✅ Add logo to the top left corner of the sidebar
     st.image("https://raw.githubusercontent.com/RAK4Analytics/Construction_Model/main/microchip.png", width=100)
     st.header("📊 Project Parameters")
 
@@ -209,29 +209,35 @@ with st.sidebar:
         "New York": 1.70
     }
 
-    # **Location Selection**
+    # ✅ Ensure session state variables are initialized **before** accessing them
+    if "location_factor" not in st.session_state:
+        st.session_state["location_factor"] = 1.0  # Default cost factor
+
+    if "pending_location_factor" not in st.session_state:
+        st.session_state["pending_location_factor"] = 1.0  # Default pending cost factor
+
+    # ✅ Location Selection
     selected_region = st.selectbox("🌍 Select Project Location", list(regional_cost_index.keys()))
 
-    # **Initialize session state for the cost factor if not already set**
-    if "location_factor" not in st.session_state:
-        st.session_state["location_factor"] = 1.0  # Default value
+    # ✅ Update pending cost factor when the region is changed
+    if st.session_state["pending_location_factor"] != regional_cost_index[selected_region]:  
+        st.session_state["pending_location_factor"] = regional_cost_index[selected_region]  # Store pending value
 
-    # **Auto-Adjust Cost Factor Based on Selection**
-    if st.session_state["location_factor"] != regional_cost_index[selected_region]:  
-        st.session_state["location_factor"] = regional_cost_index[selected_region]  # Set new value
-
-    # **Fine-Tune Cost Factor Slider (Pre-Filled with Selected Region's Value)**
+    # ✅ Fine-Tune Cost Factor Slider (Uses pending value, only applied when clicking "Estimate Cost")
     location_factor = st.slider(
         "📍 Fine-Tune Cost Factor/Price Index (Manual Adjustment)", 
         min_value=0.5, 
         max_value=2.0, 
-        value=st.session_state["location_factor"]
+        value=st.session_state["pending_location_factor"]
     )
 
     material_quality = st.selectbox("🛠️ Material Quality", ["Standard", "Premium", "Luxury"])
     project_size = st.number_input("📏 Enter Project Size (sqm)", min_value=10, max_value=100000, value=1000)
     num_floors = st.number_input("🏢 Enter Number of Floors", min_value=1, max_value=100, value=5)
     timeline = st.number_input("⏳ Enter Project Timeline (months)", min_value=1, max_value=60, value=12)
+
+# ✅ Ensure 'selected_region' is stored in session state before usage
+st.session_state["selected_region"] = selected_region
 
 # ✅ Estimate Button (Now Applies Pending Location Factor)
 if st.button("🔍 Estimate Cost"):
