@@ -17,7 +17,28 @@ import requests
 from io import BytesIO
 
 # Streamlit GUI Setup
-st.set_page_config(page_title="Construction Cost Estimator", page_icon="🏗️", layout="centered")
+st.set_page_config(page_title="Construction Cost Estimator", page_icon="🏗️", layout="wide")
+
+# ✅ Full-width banner
+banner_url = "https://images.pexels.com/photos/159358/construction-site-build-construction-work-159358.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+
+st.markdown(
+    f"""
+    <style>
+        .banner-container {{
+            width: 100vw;
+            height: 150px;  /* Adjust height if needed */
+            background-image: url('{banner_url}');
+            background-size: cover;
+            background-position: center;
+            margin-left: -2.5%;
+        }}
+    </style>
+    <div class="banner-container"></div>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # Display Logo in Top Left Corner
 st.image("https://i.postimg.cc/fLcqQZ2q/RAK-4-DIGITAL-SCREEN-GREY-BACKG.png", width=150)
